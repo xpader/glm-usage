@@ -3,7 +3,8 @@ const BASE_URL = 'https://open.bigmodel.cn';
 export interface TokenLimit {
     type: string;
     percentage: number;
-    nextResetTime: number;
+    /** 5h 窗口重置后未产生新用量时，API 会缺失此字段 */
+    nextResetTime?: number;
     currentValue?: number;
     usage?: number;
     usageDetails?: Array<{ modelCode: string; usage: number }>;

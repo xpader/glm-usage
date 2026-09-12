@@ -44,6 +44,10 @@
       {
         "command": "glmUsage.deleteKey",
         "title": "GLM Usage: Delete API Key"
+      },
+      {
+        "command": "glmUsage.showUsageDetails",
+        "title": "GLM Usage: Show Usage Details"
       }
     ],
     "configuration": {

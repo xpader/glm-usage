@@ -3,7 +3,8 @@ import { TokenLimit } from './apiClient';
 /** 单个窗口的配额数据 */
 export interface WindowQuota {
     percentage: number;
-    nextResetTime: number;
+    /** 窗口重置后无新用量时缺失 */
+    nextResetTime?: number;
 }
 
 /** 包含 5h 窗口和周窗口的完整配额状态 */
@@ -24,7 +25,7 @@ export interface QuotaStatus {
 export function parseQuotaStatus(data: { level: string; limits: TokenLimit[] }): QuotaStatus | null {
     const tokenLimits = data.limits
         .filter(l => l.type === 'TOKENS_LIMIT')
-        .sort((a, b) => a.nextResetTime - b.nextResetTime);
+        .sort((a, b) => (a.nextResetTime || 0) - (b.nextResetTime || 0));
 
     if (tokenLimits.length === 0) {
         return null;
@@ -52,10 +53,11 @@ export function parseQuotaStatus(data: { level: string; limits: TokenLimit[] }):
     };
 }
 
-/** 将时间戳格式化为重置时间点，同一天显示 HH:mm，跨天显示 MM/dd HH:mm */
-export function formatResetTime(timestampMs: number): string {
-    if (timestampMs <= 0) {
-        return '--';
+/** 将时间戳格式化为重置时间点，同一天显示 HH:mm，跨天显示 MM/dd HH:mm，缺失时显示 --:-- */
+export function formatResetTime(timestampMs?: number): string {
+    // undefined/0/NaN 均为 falsy，统一显示占位符
+    if (!timestampMs) {
+        return '--:--';
     }
     const date = new Date(timestampMs);
     const now = new Date();
@@ -88,8 +90,8 @@ export function renderTemplate(template: string, status: QuotaStatus): string {
         'WEEKLY_PERCENT': isWeeklyValid ? status.weekly.percentage.toString() : '--',
         'MCP_PERCENT': isMcpValid ? status.mcp.percentage.toString() : '--',
         'HOURLY_RESET': formatResetTime(status.hourly.nextResetTime),
-        'WEEKLY_RESET': isWeeklyValid ? formatResetTime(status.weekly.nextResetTime) : '--',
-        'MCP_RESET': isMcpValid ? formatResetTime(status.mcp.nextResetTime) : '--',
+        'WEEKLY_RESET': isWeeklyValid ? formatResetTime(status.weekly.nextResetTime) : '--:--',
+        'MCP_RESET': isMcpValid ? formatResetTime(status.mcp.nextResetTime) : '--:--',
         'HOURLY_BAR': formatProgressBar(status.hourly.percentage),
         'WEEKLY_BAR': isWeeklyValid ? formatProgressBar(status.weekly.percentage) : '--',
         'MCP_BAR': isMcpValid ? formatProgressBar(status.mcp.percentage) : '--',

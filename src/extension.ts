@@ -3,6 +3,7 @@ import { getKey, setKey, deleteKey } from './keyStorage';
 import { getQuotaLimit, getModelUsage } from './apiClient';
 import { parseQuotaStatus, QuotaStatus } from './dataParser';
 import { createStatusBarItem, updateStatusBar } from './statusBar';
+import { showUsageDetails } from './webviewPanel';
 
 let refreshTimer: ReturnType<typeof setInterval> | undefined;
 let countdownTimer: ReturnType<typeof setInterval> | undefined;
@@ -58,6 +59,13 @@ export async function activate(context: vscode.ExtensionContext) {
         refreshQuota(context, statusBarItem!);
     });
     context.subscriptions.push(refreshCommand);
+
+    // 注册命令：打开使用量详情面板
+    const detailsCommand = vscode.commands.registerCommand('glmUsage.showUsageDetails', async () => {
+        const apiKey = await getKey(context);
+        await showUsageDetails(context, apiKey);
+    });
+    context.subscriptions.push(detailsCommand);
 
     // 注册命令：删除 API Key
     const deleteKeyCommand = vscode.commands.registerCommand('glmUsage.deleteKey', async () => {
@@ -179,8 +187,8 @@ function startCountdownTimer() {
             return;
         }
         const now = Date.now();
-        // 5h 窗口已重置，触发 API 刷新获取新数据
-        if (now >= lastQuotaStatus.hourly.nextResetTime) {
+        // 5h 窗口已重置，触发 API 刷新获取新数据（无下次重置时间时跳过）
+        if (lastQuotaStatus.hourly.nextResetTime && now >= lastQuotaStatus.hourly.nextResetTime) {
             refreshQuota(extContext, statusBarItem);
         }
     }, 60_000);

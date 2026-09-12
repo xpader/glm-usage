@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getQuotaLimit, getModelUsage, getToolUsage, TokenLimit } from './apiClient';
-import { formatNumber } from './dataParser';
+import { formatNumber, formatResetTime } from './dataParser';
 import { getKey, setKey, deleteKey as deleteStoredKey } from './keyStorage';
 import { runSpeedTest, DEFAULT_MODELS, SpeedTestResult, CONCURRENCY_OPTIONS } from './speedTest';
 
@@ -255,17 +255,6 @@ function progressBar(percentage: number, width: number = 12): string {
     const actualFilled = percentage > 0 && filled === 0 ? 1 : filled;
     const empty = width - actualFilled;
     return '█'.repeat(actualFilled) + '░'.repeat(empty);
-}
-
-/** 将时间戳格式化为重置时间点 */
-function resetTimeStr(timestampMs: number): string {
-    if (timestampMs <= 0) { return '--'; }
-    const date = new Date(timestampMs);
-    const now = new Date();
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    const time = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-    if (date.toDateString() === now.toDateString()) { return time; }
-    return `${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${time}`;
 }
 
 function maskKey(key?: string): string {
@@ -535,13 +524,13 @@ function generateReportHtml(
 
         const tokenLimits = limits.filter(l => l.type === 'TOKENS_LIMIT');
         if (tokenLimits.length > 0) {
-            const current = tokenLimits.reduce((a, b) => a.nextResetTime < b.nextResetTime ? a : b);
+            const current = tokenLimits.reduce((a, b) => (a.nextResetTime || 0) < (b.nextResetTime || 0) ? a : b);
             const pct = current.percentage;
             const barColor = getBarColorClass(pct);
 
             html += `<h3>Token 使用量 (5小时窗口)</h3>`;
             html += `<div class="bar-container"><div class="bar-fill ${barColor}" style="width:${Math.min(pct, 100)}%"></div></div>`;
-            html += `<p>${progressBar(pct)} ${pct}% | 重置于 ${resetTimeStr(current.nextResetTime)}</p>`;
+            html += `<p>${progressBar(pct)} ${pct}% | 重置于 ${formatResetTime(current.nextResetTime)}</p>`;
         }
 
         for (const limit of limits) {
