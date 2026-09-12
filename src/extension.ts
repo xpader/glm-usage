@@ -60,6 +60,41 @@ export async function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(refreshCommand);
 
+    // 注册命令：状态栏点击菜单
+    const showMenuCommand = vscode.commands.registerCommand('glmUsage.showMenu', async () => {
+        const picks: Array<vscode.QuickPickItem & { command?: string }> = [
+            {
+                label: 'Refresh Usage',
+                description: 'Fetch the latest quota data from API',
+                iconPath: new vscode.ThemeIcon('refresh'),
+                command: 'glmUsage.refresh'
+            },
+            {
+                label: 'Show Usage Details',
+                description: 'Open the details panel',
+                iconPath: new vscode.ThemeIcon('graph'),
+                command: 'glmUsage.showUsageDetails'
+            },
+            {
+                label: 'Set API Key',
+                iconPath: new vscode.ThemeIcon('key'),
+                command: 'glmUsage.setKey'
+            },
+            {
+                label: 'Delete API Key',
+                iconPath: new vscode.ThemeIcon('trash'),
+                command: 'glmUsage.deleteKey'
+            }
+        ];
+        const picked = await vscode.window.showQuickPick(picks, {
+            placeHolder: 'GLM Usage — Select an action'
+        });
+        if (picked?.command) {
+            vscode.commands.executeCommand(picked.command);
+        }
+    });
+    context.subscriptions.push(showMenuCommand);
+
     // 注册命令：打开使用量详情面板
     const detailsCommand = vscode.commands.registerCommand('glmUsage.showUsageDetails', async () => {
         const apiKey = await getKey(context);

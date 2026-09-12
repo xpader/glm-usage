@@ -22,7 +22,7 @@ export type DisplayState = QuotaDisplayState | ErrorDisplayState | EmptyDisplayS
 /** 创建状态栏项 */
 export function createStatusBarItem(): vscode.StatusBarItem {
   const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
-  item.command = 'glmUsage.refresh'
+  item.command = 'glmUsage.showMenu'
   return item
 }
 
@@ -99,14 +99,14 @@ function buildTooltip(status: QuotaStatus): vscode.MarkdownString {
 export function updateStatusBar(item: vscode.StatusBarItem, state: DisplayState): void {
   switch (state.type) {
     case 'quota': {
-      item.command = 'glmUsage.refresh'
+      item.command = 'glmUsage.showMenu'
       item.text = renderTemplate(state.template, state.status)
       item.tooltip = buildTooltip(state.status)
       item.color = undefined
       break
     }
     case 'error': {
-      item.command = 'glmUsage.refresh'
+      item.command = 'glmUsage.showMenu'
       item.text = `GLM: ${state.message}`
       item.tooltip = 'GLM API Key 使用量监控'
       item.color = undefined
