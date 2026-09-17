@@ -33,12 +33,21 @@ function formatTokens(num: number): string {
   return num.toLocaleString('en-US');
 }
 
-/** 生成字符进度条，已使用 █ 未使用 ░ */
-function textBar(percentage: number, width: number = 30): string {
+/** 按使用率返回主题色 CSS 变量（<60 绿 / <85 黄 / 其余红） */
+function barColor(percentage: number): string {
+  if (percentage < 60) return 'var(--vscode-charts-blue)'
+  if (percentage < 85) return 'var(--vscode-charts-yellow)'
+  return 'var(--vscode-charts-red)'
+}
+
+/** 用同一码位 █ 拼进度条，靠 tooltip 允许的 span color 染色区分填充与留白 */
+function htmlBar(percentage: number, width: number = 10): string {
   if (percentage < 0) return ''
-  const filled = Math.max(percentage > 0 ? 1 : 0, Math.round((percentage / 100) * width))
-  const empty = width - filled
-  return '█'.repeat(filled) + '░'.repeat(empty) + ` 已使用 ${percentage}%`
+  const clamped = Math.min(100, percentage)
+  const filled = Math.round((clamped / 100) * width)
+  const filledPart = `<span style="color:${barColor(clamped)};">${'█'.repeat(filled)}</span>`
+  const emptyPart = `<span style="color:var(--vscode-scrollbarSlider-background);">${'█'.repeat(width - filled)}</span>`
+  return filledPart + emptyPart
 }
 
 /** 生成 Copilot 风格的 MarkdownString tooltip */
@@ -65,24 +74,24 @@ function buildTooltip(status: QuotaStatus): vscode.MarkdownString {
   // 卡片 1: 每 5 小时
   md.appendMarkdown('---\n\n')
   md.appendMarkdown(
-    `**每 5 小时使用额度**（重置于 ${formatResetTime(status.hourly.nextResetTime)}）\n`,
+    `**每 5 小时使用额度**（重置于 ${formatResetTime(status.hourly.nextResetTime)}）\n\n`,
   )
-  md.appendCodeblock(textBar(status.hourly.percentage))
+  md.appendMarkdown(htmlBar(status.hourly.percentage) + ` 已使用 ${status.hourly.percentage}%\n\n`)
 
   // 卡片 2: 每周
   if (status.weekly.percentage >= 0) {
     md.appendMarkdown('---\n\n')
     md.appendMarkdown(
-      `**每周使用额度**（重置于 ${formatResetTime(status.weekly.nextResetTime)}）\n`,
+      `**每周使用额度**（重置于 ${formatResetTime(status.weekly.nextResetTime)}）\n\n`,
     )
-    md.appendCodeblock(textBar(status.weekly.percentage))
+    md.appendMarkdown(htmlBar(status.weekly.percentage) + ` 已使用 ${status.weekly.percentage}%\n\n`)
   }
 
   // 卡片 3: MCP 月度
   if (status.mcp.percentage >= 0) {
     md.appendMarkdown('---\n\n')
-    md.appendMarkdown(`**MCP 每月额度**（重置于 ${formatResetTime(status.mcp.nextResetTime)}）\n`)
-    md.appendCodeblock(textBar(status.mcp.percentage))
+    md.appendMarkdown(`**MCP 每月额度**（重置于 ${formatResetTime(status.mcp.nextResetTime)}）\n\n`)
+    md.appendMarkdown(htmlBar(status.mcp.percentage) + ` 已使用 ${status.mcp.percentage}%\n\n`)
   }
 
   // md.appendMarkdown('---\n\n')

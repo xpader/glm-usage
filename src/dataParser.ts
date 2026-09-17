@@ -71,14 +71,14 @@ export function formatResetTime(timestampMs?: number): string {
 }
 
 /** 生成可视化进度条 */
-function formatProgressBar(percentage: number, width: number = 12): string {
+function formatProgressBar(percentage: number, width: number = 10): string {
     if (percentage < 0) {
         return '--';
     }
-    const filled = Math.round((percentage / 100) * width);
-    const actualFilled = percentage > 0 && filled === 0 ? 1 : filled;
-    const empty = width - actualFilled;
-    return '█'.repeat(actualFilled) + '░'.repeat(empty);
+    const clamped = Math.min(100, percentage);
+    const filled = Math.round((clamped / 100) * width);
+    const empty = width - filled;
+    return '■'.repeat(filled) + '□'.repeat(empty);
 }
 
 /** 将模板字符串中的变量替换为实际值 */
